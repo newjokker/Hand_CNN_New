@@ -28,16 +28,17 @@ torch.manual_seed(seed)
 
 # Hyperparameters etc. 
 LEARNING_RATE = 2e-5
-DEVICE = "cuda" if torch.cuda.is_available else "cpu"
-BATCH_SIZE = 16 # 64 in original paper but I don't have that much vram, grad accum?
+# DEVICE = "cuda" if torch.cuda.is_available else "cpu"
+DEVICE = "cpu"
+BATCH_SIZE = 1 # 64 in original paper but I don't have that much vram, grad accum?
 WEIGHT_DECAY = 0
 EPOCHS = 1000
 NUM_WORKERS = 2
 PIN_MEMORY = True
 LOAD_MODEL = False
 LOAD_MODEL_FILE = "overfit.pth.tar"
-IMG_DIR = "data/images"
-LABEL_DIR = "data/labels"
+IMG_DIR = r"E:\yolo_v1_train_data\data\images"
+LABEL_DIR = r"E:\yolo_v1_train_data\data\labels"
 
 
 class Compose(object):
@@ -84,14 +85,15 @@ def main():
         load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
 
     train_dataset = VOCDataset(
-        "data/100examples.csv",
+        r"E:\yolo_v1_train_data\data\train.csv",
         transform=transform,
         img_dir=IMG_DIR,
         label_dir=LABEL_DIR,
     )
 
     test_dataset = VOCDataset(
-        "data/test.csv", transform=transform, img_dir=IMG_DIR, label_dir=LABEL_DIR,
+        r"E:\yolo_v1_train_data\data\test.csv",
+        transform=transform, img_dir=IMG_DIR, label_dir=LABEL_DIR,
     )
 
     train_loader = DataLoader(
@@ -113,6 +115,9 @@ def main():
     )
 
     for epoch in range(EPOCHS):
+
+        print("epoch : {0}".format(epoch))
+
         # for x, y in train_loader:
         #    x = x.to(DEVICE)
         #    for idx in range(8):
@@ -126,6 +131,9 @@ def main():
         pred_boxes, target_boxes = get_bboxes(
             train_loader, model, iou_threshold=0.5, threshold=0.4
         )
+
+        print(pred_boxes.shape)
+        print(target_boxes.shape)
 
         mean_avg_prec = mean_average_precision(
             pred_boxes, target_boxes, iou_threshold=0.5, box_format="midpoint"

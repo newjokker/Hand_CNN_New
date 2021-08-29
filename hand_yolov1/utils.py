@@ -239,7 +239,7 @@ def get_bboxes(
     threshold,
     pred_format="cells",
     box_format="midpoint",
-    device="cuda",
+    device="cpu",
 ):
     all_pred_boxes = []
     all_true_boxes = []
@@ -286,7 +286,6 @@ def get_bboxes(
     return all_pred_boxes, all_true_boxes
 
 
-
 def convert_cellboxes(predictions, S=7):
     """
     Converts bounding boxes output from Yolo with
@@ -323,7 +322,6 @@ def convert_cellboxes(predictions, S=7):
 
     return converted_preds
 
-
 def cellboxes_to_boxes(out, S=7):
     converted_pred = convert_cellboxes(out).reshape(out.shape[0], S * S, -1)
     converted_pred[..., 0] = converted_pred[..., 0].long()
@@ -341,7 +339,6 @@ def cellboxes_to_boxes(out, S=7):
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
-
 
 def load_checkpoint(checkpoint, model, optimizer):
     print("=> Loading checkpoint")
