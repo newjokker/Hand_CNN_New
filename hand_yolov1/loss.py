@@ -17,7 +17,7 @@ class YoloLoss(nn.Module):
 
     def __init__(self, S=7, B=2, C=20):
         super(YoloLoss, self).__init__()
-        self.mse = nn.MSELoss(reduction="sum")
+        self.mse = nn.MSELoss(reduction="sum")  # sum | mean
 
         """
         S is split size of image (in paper 7),

@@ -42,6 +42,8 @@ LABEL_DIR = r"E:\yolo_v1_train_data\data\labels"
 
 
 class Compose(object):
+    """原来这个整合多个 transform 的 compose 函数都是自己写的"""
+
     def __init__(self, transforms):
         self.transforms = transforms
 
@@ -64,9 +66,23 @@ def train_fn(train_loader, model, optimizer, loss_fn):
         out = model(x)
         loss = loss_fn(out, y)
         mean_loss.append(loss.item())
+        # 梯度初始化为 0
         optimizer.zero_grad()
+        # 反向传播梯度
         loss.backward()
+        # 更新参数
         optimizer.step()
+
+        """
+        * -- 我理解的流程 -- ？ 
+        * 梯度为 0 
+        * 一系列的计算，有梯度, 得到 loss
+        * 梯度设置为 0
+        * loss 反向求取梯度
+        * 使用梯度对参数值进行更新
+        
+        - 因为要使用梯度的反向传播，所以在计算 loss 的时候只能使用矩阵运算吗？还是可以将里面的参数拿出来操作，计算出结果之后再赋值给一个 loss 变量 
+        """
 
         # update progress bar
         loop.set_postfix(loss=loss.item())

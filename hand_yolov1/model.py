@@ -5,6 +5,9 @@ with slight modification with added BatchNorm.
 
 import torch
 import torch.nn as nn
+from torchsummary import summary
+
+
 
 """ 
 Information about architecture config:
@@ -117,3 +120,21 @@ class Yolov1(nn.Module):
             nn.LeakyReLU(0.1),
             nn.Linear(496, S * S * (C + B * 5)),
         )
+
+
+
+
+if __name__ == "__main__":
+
+    model = Yolov1(split_size=7, num_boxes=2, num_classes=20)
+
+    summary(model)
+
+
+
+
+
+
+
+
+
