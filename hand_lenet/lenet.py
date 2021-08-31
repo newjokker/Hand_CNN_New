@@ -1,5 +1,3 @@
-# -*- coding: utf-8  -*-
-# -*- author: jokker -*-
 
 import torch
 import torch.nn as nn
@@ -20,7 +18,21 @@ from torchsummary import summary
 # Training settings
 batch_size = 64
 
+class Compose(object):
+    """原来这个整合多个 transform 的 compose 函数都是自己写的"""
+
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, img, bboxes):
+        for t in self.transforms:
+            img = t(img)
+
+        return img
+
+
 # MNIST Dataset
+# train_dataset = datasets.MNIST(root='./data/', train=True, transform=transforms.ToTensor(), download=True)
 train_dataset = datasets.MNIST(root='./data/', train=True, transform=transforms.ToTensor(), download=True)
 test_dataset = datasets.MNIST(root='./data/', train=False, transform=transforms.ToTensor())
 
@@ -31,35 +43,52 @@ train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=bat
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
 
-class Net(nn.Module):
+class LeNet(nn.Module):
+    def __init__(self, in_channels, init_weights=True, num_classes=10):
+        super(LeNet, self).__init__()
 
-    def __init__(self):
-        super(Net, self).__init__()
-        # 输入1通道，输出10通道，kernel 5*5
-        self.conv1 = nn.Conv2d(1, 20, kernel_size=5)
-        self.conv2 = nn.Conv2d(20, 40, kernel_size=5)
-        #
-        self.BN_20 = nn.BatchNorm2d(20)                     # BatchNorm2d 显著增加了模型的性能
-        self.BN_40 = nn.BatchNorm2d(40)
-        #
-        self.mp = nn.MaxPool2d(2)
-        # fully connect
-        self.fc = nn.Linear(640, 10)
+        self.num_classes = num_classes
+
+        if init_weights:
+            self._initialize_weights()
+
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=6, kernel_size=5)
+        self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
 
     def forward(self, x):
-        # in_size = 64
-        in_size = x.size(0) # one batch
-        # x: 64*10*12*12
-        x = self.BN_20(self.mp(self.conv1(x)))
-        x = F.relu(x)
-        # x: 64*20*4*4
-        x = self.BN_40(self.mp(self.conv2(x)))
-        x = F.relu(x)
-        # x: 64*320
-        x = x.view(in_size, -1) # flatten the tensor
-        # x: 64*10
-        x = self.fc(x)
-        return F.log_softmax(x)
+
+        z1 = self.conv1(x)  # 6 x 28 x 28
+        a1 = F.relu(z1)  # 6 x 28 x 28
+        a1 = F.max_pool2d(a1, kernel_size=2, stride=2)  # 6 x 14 x 14
+        z2 = self.conv2(a1)  # 16 x 10 x 10
+        a2 = F.relu(z2)  # 16 x 10 x 10
+        a2 = F.max_pool2d(a2, kernel_size=2, stride=2)  # 16 x 5 x 5
+        flatten_a2 = a2.view(a2.size(0), -1)
+        z3 = self.fc1(flatten_a2)
+        a3 = F.relu(z3)
+        z4 = self.fc2(a3)
+        a4 = F.relu(z4)
+        z5 = self.fc3(a4)
+        return F.log_softmax(z5)
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
 
 
 def train(epoch):
@@ -102,19 +131,31 @@ def test():
 if __name__ == "__main__":
 
 
-    # model_path = r"./model/demo.pth"
+    model_path = r"./model/demo.pth"
     # 加载模型
-    # model = torch.load(model_path)
-    model = Net()
+    #model = torch.load(model_path)
+    model = LeNet(1)
     # 优化器需要和 model 绑定，因为要执行 model 参数的更新
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
     summary(model)
 
-    # for epoch in range(3):
+    # for epoch in range(10):
     #     train(epoch)
     #     test()
 
     # 保存模型
-    torch.save(model, model_path)
+    # torch.save(model, model_path)
 
+
+
+# if __name__ == "__main__":
+#
+#     def test_lenet():
+#         net = LeNet(1)
+#         x = torch.randn(64, 1, 32, 32)
+#         y = net(x)
+#         print(y.size())
+#
+#
+#     test_lenet()
