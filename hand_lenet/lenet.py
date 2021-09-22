@@ -1,5 +1,10 @@
+# -*- coding: utf-8  -*-
+# -*- author: jokker -*-
+
 
 import torch
+import cv2
+from PIL import Image
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -7,36 +12,18 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 from torchsummary import summary
 
-# 自定义分类网络
-# 手写数字分类网络
-
 # --------------------------------------------------
-# todo 如何缩小模型，裁剪模型
-# todo 学习率的更新
+# todo 使用卷积进行 resize 也是一种不错的方式
 # --------------------------------------------------
 
 # Training settings
 batch_size = 64
 
-class Compose(object):
-    """原来这个整合多个 transform 的 compose 函数都是自己写的"""
-
-    def __init__(self, transforms):
-        self.transforms = transforms
-
-    def __call__(self, img, bboxes):
-        for t in self.transforms:
-            img = t(img)
-
-        return img
-
 
 # MNIST Dataset
-# train_dataset = datasets.MNIST(root='./data/', train=True, transform=transforms.ToTensor(), download=True)
-train_dataset = datasets.MNIST(root='./data/', train=True, transform=transforms.ToTensor(), download=True)
-test_dataset = datasets.MNIST(root='./data/', train=False, transform=transforms.ToTensor())
+train_dataset = datasets.MNIST(root='../Data/MNist/', train=True, transform=transforms.ToTensor(), download=True)
+test_dataset = datasets.MNIST(root='../Data/MNist/', train=False, transform=transforms.ToTensor())
 
-# exit()
 
 # Data Loader (Input Pipeline)
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
@@ -52,6 +39,8 @@ class LeNet(nn.Module):
         if init_weights:
             self._initialize_weights()
 
+        # for change dataset's shape padding for
+        self.resize = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, padding=3)
         self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=6, kernel_size=5)
         self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5)
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
@@ -59,12 +48,12 @@ class LeNet(nn.Module):
         self.fc3 = nn.Linear(84, 10)
 
     def forward(self, x):
-
-        z1 = self.conv1(x)  # 6 x 28 x 28
-        a1 = F.relu(z1)  # 6 x 28 x 28
+        x = self.resize(x)                              # 6 x 28 x 28 --> 6 x 32 x 32
+        z1 = self.conv1(x)                              # 6 x 28 x 28
+        a1 = F.relu(z1)                                 # 6 x 28 x 28
         a1 = F.max_pool2d(a1, kernel_size=2, stride=2)  # 6 x 14 x 14
-        z2 = self.conv2(a1)  # 16 x 10 x 10
-        a2 = F.relu(z2)  # 16 x 10 x 10
+        z2 = self.conv2(a1)                             # 16 x 10 x 10
+        a2 = F.relu(z2)                                 # 16 x 10 x 10
         a2 = F.max_pool2d(a2, kernel_size=2, stride=2)  # 16 x 5 x 5
         flatten_a2 = a2.view(a2.size(0), -1)
         z3 = self.fc1(flatten_a2)
@@ -94,8 +83,6 @@ class LeNet(nn.Module):
 def train(epoch):
     #
     for batch_idx, (data, target) in enumerate(train_loader):
-        # fixme 不明白这边为什么要将 tensor 转为 Variable
-        # data, target = Variable(data), Variable(target)
         # 使用当前命名空间中的 grad，所以需要 optimizer 每次清空
         optimizer.zero_grad()
         output = model(data)
@@ -138,24 +125,11 @@ if __name__ == "__main__":
     # 优化器需要和 model 绑定，因为要执行 model 参数的更新
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
-    summary(model)
+    # summary(model)
 
-    # for epoch in range(10):
-    #     train(epoch)
-    #     test()
+    for epoch in range(10):
+        train(epoch)
+        test()
 
     # 保存模型
-    # torch.save(model, model_path)
-
-
-
-# if __name__ == "__main__":
-#
-#     def test_lenet():
-#         net = LeNet(1)
-#         x = torch.randn(64, 1, 32, 32)
-#         y = net(x)
-#         print(y.size())
-#
-#
-#     test_lenet()
+    torch.save(model, model_path)
