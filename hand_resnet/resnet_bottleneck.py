@@ -11,7 +11,6 @@ from torchsummary import summary
 """
 
 
-
 class Bottleneck(nn.Module):
     def __init__(self, in_dim, out_dim, stride=1):
         super (Bottleneck, self).__init__()
