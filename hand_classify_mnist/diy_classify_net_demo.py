@@ -21,8 +21,8 @@ from torchsummary import summary
 batch_size = 64
 
 # MNIST Dataset
-train_dataset = datasets.MNIST(root='./data/', train=True, transform=transforms.ToTensor(), download=True)
-test_dataset = datasets.MNIST(root='./data/', train=False, transform=transforms.ToTensor())
+train_dataset = datasets.MNIST(root='../Data/MNist/', train=True, transform=transforms.ToTensor(), download=True)
+test_dataset = datasets.MNIST(root='../Data/MNist/', train=False, transform=transforms.ToTensor())
 
 # exit()
 
@@ -107,14 +107,14 @@ if __name__ == "__main__":
     # model = torch.load(model_path)
     model = Net()
     # 优化器需要和 model 绑定，因为要执行 model 参数的更新
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+    optimizer = optim.SGD(model.parameters(), lr=0.02, momentum=0.5)
 
     summary(model)
 
-    # for epoch in range(3):
-    #     train(epoch)
-    #     test()
+    for epoch in range(3):
+        train(epoch)
+        test()
 
     # 保存模型
-    torch.save(model, model_path)
+    # torch.save(model, model_path)
 
