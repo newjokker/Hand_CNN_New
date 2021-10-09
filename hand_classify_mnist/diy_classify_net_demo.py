@@ -18,7 +18,7 @@ from torchsummary import summary
 # --------------------------------------------------
 
 # Training settings
-batch_size = 64
+batch_size = 1
 
 # MNIST Dataset
 train_dataset = datasets.MNIST(root='../Data/MNist/', train=True, transform=transforms.ToTensor(), download=True)
